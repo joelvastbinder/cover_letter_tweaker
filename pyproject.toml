@@ -1,0 +1,21 @@
+[project]
+name = "cover-letter-tweaker"
+version = "0.1.0"
+description = "FastAPI app to help tweak cover letters for different job postings"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.104.1",
+    "uvicorn>=0.24.0",
+    "jinja2>=3.1.2",
+    "google-genai>=0.1.0",
+    "python-dotenv>=1.0.0",
+    "python-multipart>=0.0.20",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]

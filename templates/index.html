@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cover Letter Tweaker</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Cover Letter Tweaker</h1>
+            <p class="subtitle">Customize your cover letter for different job postings</p>
+        </header>
+
+        <form id="coverLetterForm">
+            <div class="form-section">
+                <label for="companyDescription">
+                    Company Description
+                    <span class="help-text">Provide details about the company you're applying to</span>
+                </label>
+                <textarea 
+                    id="companyDescription" 
+                    name="companyDescription" 
+                    rows="6" 
+                    placeholder="Enter company description, culture, values, mission, etc."
+                    required
+                ></textarea>
+            </div>
+
+            <div class="form-section">
+                <label for="roleDescription">
+                    Role Description
+                    <span class="help-text">Paste the job posting or role requirements</span>
+                </label>
+                <textarea 
+                    id="roleDescription" 
+                    name="roleDescription" 
+                    rows="8" 
+                    placeholder="Enter the full job description, requirements, responsibilities, etc."
+                    required
+                ></textarea>
+            </div>
+
+            <div class="form-section">
+                <label for="resumeText">
+                    Your Resume
+                    <span class="help-text">Paste your resume text to match with the job requirements</span>
+                </label>
+                <textarea 
+                    id="resumeText" 
+                    name="resumeText" 
+                    rows="8" 
+                    placeholder="Enter your resume text, including your experience, skills, and achievements..."
+                    required
+                ></textarea>
+            </div>
+
+            <div class="form-section">
+                <label>
+                    Your Cover Letter
+                    <span class="help-text">Upload a file or paste your cover letter text</span>
+                </label>
+                
+                <div class="input-mode-toggle">
+                    <button type="button" class="toggle-btn active" data-mode="text">Text Input</button>
+                    <button type="button" class="toggle-btn" data-mode="file">File Upload</button>
+                </div>
+
+                <div id="textInputSection" class="input-section active">
+                    <textarea 
+                        id="coverLetterText" 
+                        name="coverLetterText" 
+                        rows="12" 
+                        placeholder="Paste your cover letter here..."
+                    ></textarea>
+                </div>
+
+                <div id="fileInputSection" class="input-section">
+                    <div class="file-upload-area">
+                        <input 
+                            type="file" 
+                            id="coverLetterFile" 
+                            name="coverLetterFile" 
+                            accept=".txt,.pdf,.docx"
+                            hidden
+                        >
+                        <label for="coverLetterFile" class="file-upload-label">
+                            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <span class="upload-text">Click to upload or drag and drop</span>
+                            <span class="upload-subtext">Supports .txt, .pdf, .docx files</span>
+                        </label>
+                        <div id="fileName" class="file-name"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">
+                Process Cover Letter
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"></path>
+                </svg>
+            </button>
+        </form>
+
+        <div id="result" class="result-section hidden">
+            <h2>Result</h2>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
+
