@@ -4,9 +4,12 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from typing import Optional
-from io import BytesIO
-from docx import Document
-from helpers.gemini_helper import rewrite_cover_letter
+
+from config import Config
+from helpers.gemini_helper import GeminiHelper
+from helpers.form_validation_helper import FormValidationHelper
+
+DEBUG = Config.DEBUG
 
 app = FastAPI(title="Cover Letter Tweaker")
 
@@ -24,13 +27,20 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Render the main page"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        "index.html", 
+        {
+            "request": request,
+            "max_text_length": Config.MAX_TEXT_LENGTH
+        }
+    )
 
 
 @app.post("/process")
 async def process_cover_letter(
-    companyDescription: str = Form(...),
-    roleDescription: str = Form(...),
+    jobLink: Optional[str] = Form(None),
+    companyDescription: Optional[str] = Form(None),
+    roleDescription: Optional[str] = Form(None),
     resumeText: Optional[str] = Form(None),
     coverLetterText: Optional[str] = Form(None),
     resumeFile: Optional[UploadFile] = File(None),
@@ -43,159 +53,83 @@ async def process_cover_letter(
     Accepts either text or file upload (TXT, PDF, DOCX) for both resume and cover letter.
     """
     try:
-        # Validate that we have either resume text or file
-        if not resumeText and not resumeFile:
+        form_validation_helper = FormValidationHelper(
+            jobLink,
+            companyDescription,
+            roleDescription,
+            resumeText,
+            coverLetterText,
+            resumeFile,
+            coverLetterFile,
+        )
+        success, error = await form_validation_helper.validate_form()
+        if not success:
             return JSONResponse(
                 status_code=400,
                 content={
                     "success": False,
-                    "error": "Please provide either resume text or upload a resume file.",
+                    "error": error,
                 },
             )
 
-        # Validate that we have either cover letter text or file
-        if not coverLetterText and not coverLetterFile:
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "success": False,
-                    "error": "Please provide either cover letter text or upload a file.",
-                },
-            )
-
-        # Combine company and role descriptions into job_details
-        job_details = f"Company Description:\n{companyDescription}\n\nRole Description:\n{roleDescription}"
-
+        # TODO: Remove this once the form validation helper is implemented
         # Handle resume file upload if provided
-        resume_file_data = None
-        resume_file_mime_type = None
-
-        if resumeFile:
-            # Read file bytes
-            file_bytes = await resumeFile.read()
-
-            # Validate file size (10MB limit for reasonable processing)
-            max_size = 10 * 1024 * 1024  # 10MB
-            if len(file_bytes) > max_size:
-                return JSONResponse(
-                    status_code=400,
-                    content={
-                        "success": False,
-                        "error": "Resume file size exceeds 10MB limit. Please use a smaller file.",
-                    },
-                )
-
-            # Determine file type and process accordingly
-            filename = resumeFile.filename.lower()
-
-            if filename.endswith(".txt"):
-                # TXT: pass as inline data
-                resume_file_mime_type = "text/plain"
-                resume_file_data = file_bytes
-
-            elif filename.endswith(".pdf"):
-                # PDF: pass as inline data (Gemini supports this)
-                resume_file_mime_type = "application/pdf"
-                resume_file_data = file_bytes
-
-            elif filename.endswith(".docx"):
-                # DOCX: extract text on backend (Gemini doesn't support DOCX inline data)
-                try:
-                    doc = Document(BytesIO(file_bytes))
-                    resumeText = "\n".join(
-                        [paragraph.text for paragraph in doc.paragraphs]
-                    )
-                    # Clear file data so we use text path instead
-                    resume_file_data = None
-                    resume_file_mime_type = None
-                except Exception as e:
-                    return JSONResponse(
-                        status_code=400,
-                        content={
-                            "success": False,
-                            "error": f"Failed to extract text from resume DOCX file: {e}",
-                        },
-                    )
-            else:
-                return JSONResponse(
-                    status_code=400,
-                    content={
-                        "success": False,
-                        "error": "Unsupported resume file type. Please upload a .txt, .pdf, or .docx file.",
-                    },
-                )
+        resume_file_data = form_validation_helper.resumeFileData
+        resume_file_mime_type = form_validation_helper.resumeFileMimeType
 
         # Handle cover letter file upload if provided
-        cover_letter_file_data = None
-        cover_letter_file_mime_type = None
+        cover_letter_file_data = form_validation_helper.coverLetterFileData
+        cover_letter_file_mime_type = form_validation_helper.coverLetterFileMimeType
 
-        if coverLetterFile:
-            # Read file bytes
-            file_bytes = await coverLetterFile.read()
+        # Initialize Gemini helper
+        gemini_helper = GeminiHelper()
 
-            # Validate file size (10MB limit for reasonable processing)
-            max_size = 10 * 1024 * 1024  # 10MB
-            if len(file_bytes) > max_size:
+        # Get job details either from URL or manual input
+        if form_validation_helper.job_link_provided:
+            # Use fetch_job_details to retrieve information from URL
+            job_details = gemini_helper.fetch_job_details(jobLink.strip())
+            
+            if job_details is None:
                 return JSONResponse(
                     status_code=400,
                     content={
                         "success": False,
-                        "error": "Cover letter file size exceeds 10MB limit. Please use a smaller file.",
+                        "error": (
+                            "Failed to retrieve job details from the provided URL. "
+                            "Please check the link and try again."
+                        ),
                     },
                 )
-
-            # Determine file type and process accordingly
-            filename = coverLetterFile.filename.lower()
-
-            if filename.endswith(".txt"):
-                # TXT: pass as inline data
-                cover_letter_file_mime_type = "text/plain"
-                cover_letter_file_data = file_bytes
-
-            elif filename.endswith(".pdf"):
-                # PDF: pass as inline data (Gemini supports this)
-                cover_letter_file_mime_type = "application/pdf"
-                cover_letter_file_data = file_bytes
-
-            elif filename.endswith(".docx"):
-                # DOCX: extract text on backend (Gemini doesn't support DOCX inline data)
-                try:
-                    doc = Document(BytesIO(file_bytes))
-                    coverLetterText = "\n".join(
-                        [paragraph.text for paragraph in doc.paragraphs]
-                    )
-                    # Clear file data so we use text path instead
-                    cover_letter_file_data = None
-                    cover_letter_file_mime_type = None
-                except Exception as e:
-                    return JSONResponse(
-                        status_code=400,
-                        content={
-                            "success": False,
-                            "error": f"Failed to extract text from cover letter DOCX file: {e}",
-                        },
-                    )
-            else:
-                return JSONResponse(
-                    status_code=400,
-                    content={
-                        "success": False,
-                        "error": "Unsupported cover letter file type. Please upload a .txt, .pdf, or .docx file.",
-                    },
-                )
+        else:
+            # Combine company and role descriptions into job_details
+            job_details = (
+                f"Company Description:\n{companyDescription}\n\n"
+                f"Role Description:\n{roleDescription}"
+            )
 
         # Call the rewrite_cover_letter function
-        revised_letter = rewrite_cover_letter(
+        revised_letter = gemini_helper.rewrite_cover_letter(
             job_details=job_details,
             resume_text=resumeText,
             existing_letter=coverLetterText,
-            coverLetter_file_data=cover_letter_file_data,
-            coverLetter_file_mime_type=cover_letter_file_mime_type,
+            cover_letter_file_data=cover_letter_file_data,
+            cover_letter_file_mime_type=cover_letter_file_mime_type,
             resume_file_data=resume_file_data,
             resume_file_mime_type=resume_file_mime_type,
         )
 
-        if revised_letter:
+        if revised_letter == "SERVICE_UNAVAILABLE":
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "success": False,
+                    "error": (
+                        "The Gemini AI service is currently overloaded. "
+                        "Please try again in a few moments."
+                    ),
+                },
+            )
+        elif revised_letter:
             return JSONResponse(
                 content={"success": True, "revised_letter": revised_letter}
             )
@@ -204,11 +138,17 @@ async def process_cover_letter(
                 status_code=500,
                 content={
                     "success": False,
-                    "error": "Failed to generate revised cover letter. Please check your API key and try again.",
+                    "error": (
+                        "Failed to generate revised cover letter. "
+                        "Please check your API key and try again."
+                    ),
                 },
             )
 
     except Exception as e:
+
+        if DEBUG:
+            raise e
         return JSONResponse(
             status_code=500,
             content={"success": False, "error": f"An error occurred: {str(e)}"},

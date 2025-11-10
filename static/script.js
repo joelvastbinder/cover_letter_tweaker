@@ -1,6 +1,12 @@
 // LocalStorage key for form data persistence
 const STORAGE_KEY = 'coverLetterFormData';
 
+// Configuration
+const DEBOUNCE_MS = 500;
+const LOCALSTORAGE_FILE_LIMIT = 2 * 1024 * 1024;  // 2MB
+// MAX_TEXT_LENGTH is set from backend via window.MAX_TEXT_LENGTH in index.html
+const MAX_TEXT_LENGTH = window.MAX_TEXT_LENGTH || 50000;  // Fallback to 50000 if not set
+
 // Debounce function to limit save frequency
 function debounce(func, wait) {
     let timeout;
@@ -12,6 +18,46 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
+}
+
+// Validate text length for input fields
+function validateTextLength(element) {
+    const value = element.value;
+    const length = value.length;
+    
+    if (length > MAX_TEXT_LENGTH) {
+        // Truncate to max length
+        element.value = value.substring(0, MAX_TEXT_LENGTH);
+        
+        // Show error message
+        let errorDiv = element.parentElement.querySelector('.text-length-error');
+        if (!errorDiv) {
+            errorDiv = document.createElement('div');
+            errorDiv.className = 'text-length-error';
+            errorDiv.style.color = '#ef4444';
+            errorDiv.style.fontSize = '0.875rem';
+            errorDiv.style.marginTop = '0.25rem';
+            element.parentElement.appendChild(errorDiv);
+        }
+        errorDiv.textContent = `Text exceeds maximum length of ${MAX_TEXT_LENGTH.toLocaleString()} characters. Content has been truncated.`;
+        
+        // Remove error after 5 seconds
+        setTimeout(() => {
+            if (errorDiv && errorDiv.parentElement) {
+                errorDiv.remove();
+            }
+        }, 5000);
+        
+        return false;
+    }
+    
+    // Remove error message if exists
+    const errorDiv = element.parentElement.querySelector('.text-length-error');
+    if (errorDiv) {
+        errorDiv.remove();
+    }
+    
+    return true;
 }
 
 // Helper function to convert File to base64
@@ -43,14 +89,17 @@ function base64ToFile(base64, filename, mimeType) {
 
 // Save form data to localStorage
 async function saveFormData() {
+    const jobToggle = document.querySelector('.toggle-btn.active[data-target="job"]');
     const resumeToggle = document.querySelector('.toggle-btn.active[data-target="resume"]');
     const coverLetterToggle = document.querySelector('.toggle-btn.active[data-target="coverLetter"]');
     
     const formData = {
+        jobLink: document.getElementById('jobLink').value,
         companyDescription: document.getElementById('companyDescription').value,
         roleDescription: document.getElementById('roleDescription').value,
         resumeText: document.getElementById('resumeText').value,
         coverLetterText: document.getElementById('coverLetterText').value,
+        jobInputMode: jobToggle ? jobToggle.dataset.mode : 'link',
         resumeInputMode: resumeToggle ? resumeToggle.dataset.mode : 'file',
         coverLetterInputMode: coverLetterToggle ? coverLetterToggle.dataset.mode : 'file'
     };
@@ -59,9 +108,8 @@ async function saveFormData() {
     const resumeFileInput = document.getElementById('resumeFile');
     if (resumeFileInput && resumeFileInput.files && resumeFileInput.files[0]) {
         const file = resumeFileInput.files[0];
-        const maxSize = 2 * 1024 * 1024; // 2MB limit
         
-        if (file.size <= maxSize) {
+        if (file.size <= LOCALSTORAGE_FILE_LIMIT) {
             try {
                 const base64 = await fileToBase64(file);
                 formData.resumeFile = {
@@ -81,9 +129,8 @@ async function saveFormData() {
     const coverLetterFileInput = document.getElementById('coverLetterFile');
     if (coverLetterFileInput && coverLetterFileInput.files && coverLetterFileInput.files[0]) {
         const file = coverLetterFileInput.files[0];
-        const maxSize = 2 * 1024 * 1024; // 2MB limit
         
-        if (file.size <= maxSize) {
+        if (file.size <= LOCALSTORAGE_FILE_LIMIT) {
             try {
                 const base64 = await fileToBase64(file);
                 formData.coverLetterFile = {
@@ -127,10 +174,19 @@ function loadFormData() {
             const formData = JSON.parse(savedData);
             
             // Populate form fields
+            document.getElementById('jobLink').value = formData.jobLink || '';
             document.getElementById('companyDescription').value = formData.companyDescription || '';
             document.getElementById('roleDescription').value = formData.roleDescription || '';
             document.getElementById('resumeText').value = formData.resumeText || '';
             document.getElementById('coverLetterText').value = formData.coverLetterText || '';
+            
+            // Restore job input mode
+            if (formData.jobInputMode) {
+                const jobTargetButton = document.querySelector(`.toggle-btn[data-target="job"][data-mode="${formData.jobInputMode}"]`);
+                if (jobTargetButton) {
+                    jobTargetButton.click();
+                }
+            }
             
             // Restore resume input mode
             if (formData.resumeInputMode) {
@@ -217,6 +273,7 @@ function clearSavedData() {
         console.log('Saved form data cleared');
         
         // Clear form fields
+        document.getElementById('jobLink').value = '';
         document.getElementById('companyDescription').value = '';
         document.getElementById('roleDescription').value = '';
         document.getElementById('resumeText').value = '';
@@ -254,7 +311,7 @@ function clearSavedData() {
 }
 
 // Create debounced save function
-const debouncedSave = debounce(saveFormData, 500);
+const debouncedSave = debounce(saveFormData, DEBOUNCE_MS);
 
 // Toggle between text input and file upload
 const toggleButtons = document.querySelectorAll('.toggle-btn');
@@ -273,7 +330,18 @@ toggleButtons.forEach(button => {
         button.classList.add('active');
         
         // Show/hide appropriate section based on target
-        if (target === 'resume') {
+        if (target === 'job') {
+            const jobLinkSection = document.getElementById('jobLinkInputSection');
+            const jobTextSection = document.getElementById('jobTextInputSection');
+            
+            if (mode === 'text') {
+                jobLinkSection.classList.remove('active');
+                jobTextSection.classList.add('active');
+            } else {
+                jobLinkSection.classList.add('active');
+                jobTextSection.classList.remove('active');
+            }
+        } else if (target === 'resume') {
             const resumeTextSection = document.getElementById('resumeTextInputSection');
             const resumeFileSection = document.getElementById('resumeFileInputSection');
             
@@ -420,11 +488,27 @@ resumeFileUploadArea.addEventListener('drop', (e) => {
     }
 });
 
-// Add auto-save listeners to form fields
-document.getElementById('companyDescription').addEventListener('input', debouncedSave);
-document.getElementById('roleDescription').addEventListener('input', debouncedSave);
-document.getElementById('resumeText').addEventListener('input', debouncedSave);
-document.getElementById('coverLetterText').addEventListener('input', debouncedSave);
+// Add auto-save listeners to form fields with validation
+document.getElementById('jobLink').addEventListener('input', (e) => {
+    validateTextLength(e.target);
+    debouncedSave();
+});
+document.getElementById('companyDescription').addEventListener('input', (e) => {
+    validateTextLength(e.target);
+    debouncedSave();
+});
+document.getElementById('roleDescription').addEventListener('input', (e) => {
+    validateTextLength(e.target);
+    debouncedSave();
+});
+document.getElementById('resumeText').addEventListener('input', (e) => {
+    validateTextLength(e.target);
+    debouncedSave();
+});
+document.getElementById('coverLetterText').addEventListener('input', (e) => {
+    validateTextLength(e.target);
+    debouncedSave();
+});
 
 // Load saved data when page loads
 window.addEventListener('DOMContentLoaded', loadFormData);
@@ -441,6 +525,7 @@ form.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     // Get form values
+    const jobLink = document.getElementById('jobLink').value;
     const companyDescription = document.getElementById('companyDescription').value;
     const roleDescription = document.getElementById('roleDescription').value;
     const resumeText = document.getElementById('resumeText').value;
@@ -449,11 +534,53 @@ form.addEventListener('submit', async (e) => {
     const resumeFile = resumeFileInput.files[0];
     
     // Get active modes
+    const jobActiveButton = document.querySelector('.toggle-btn.active[data-target="job"]');
     const resumeActiveButton = document.querySelector('.toggle-btn.active[data-target="resume"]');
     const coverLetterActiveButton = document.querySelector('.toggle-btn.active[data-target="coverLetter"]');
     
+    const jobActiveMode = jobActiveButton ? jobActiveButton.dataset.mode : 'link';
     const resumeActiveMode = resumeActiveButton ? resumeActiveButton.dataset.mode : 'file';
     const coverLetterActiveMode = coverLetterActiveButton ? coverLetterActiveButton.dataset.mode : 'file';
+    
+    // Validate job information based on active mode
+    if (jobActiveMode === 'link') {
+        if (!jobLink.trim()) {
+            alert('Please enter a job link');
+            return;
+        }
+    } else {
+        // text mode
+        if (!companyDescription.trim() || !roleDescription.trim()) {
+            alert('Please enter both company description and role description');
+            return;
+        }
+    }
+    
+    // Validate text lengths
+    if (jobLink.length > MAX_TEXT_LENGTH) {
+        alert(`Job link exceeds maximum length of ${MAX_TEXT_LENGTH.toLocaleString()} characters`);
+        return;
+    }
+    
+    if (companyDescription.length > MAX_TEXT_LENGTH) {
+        alert(`Company description exceeds maximum length of ${MAX_TEXT_LENGTH.toLocaleString()} characters`);
+        return;
+    }
+    
+    if (roleDescription.length > MAX_TEXT_LENGTH) {
+        alert(`Role description exceeds maximum length of ${MAX_TEXT_LENGTH.toLocaleString()} characters`);
+        return;
+    }
+    
+    if (resumeText.length > MAX_TEXT_LENGTH) {
+        alert(`Resume text exceeds maximum length of ${MAX_TEXT_LENGTH.toLocaleString()} characters`);
+        return;
+    }
+    
+    if (coverLetterText.length > MAX_TEXT_LENGTH) {
+        alert(`Cover letter text exceeds maximum length of ${MAX_TEXT_LENGTH.toLocaleString()} characters`);
+        return;
+    }
     
     // Validate that we have a resume (either text or file)
     if (resumeActiveMode === 'text' && !resumeText.trim()) {
@@ -479,6 +606,7 @@ form.addEventListener('submit', async (e) => {
     
     // Prepare form data
     const formData = new FormData();
+    formData.append('jobLink', jobLink);
     formData.append('companyDescription', companyDescription);
     formData.append('roleDescription', roleDescription);
     

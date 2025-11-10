@@ -106,24 +106,30 @@ label {
     margin-top: 0.25rem;
 }
 
-textarea {
+textarea,
+input[type="url"] {
     width: 100%;
     padding: 0.75rem;
     border: 2px solid var(--border-color);
     border-radius: 0.5rem;
     font-size: 1rem;
     font-family: inherit;
-    resize: vertical;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-textarea:focus {
+textarea {
+    resize: vertical;
+}
+
+textarea:focus,
+input[type="url"]:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-textarea::placeholder {
+textarea::placeholder,
+input[type="url"]::placeholder {
     color: var(--text-secondary);
     opacity: 0.6;
 }
@@ -299,4 +305,5 @@ textarea::placeholder {
         padding: 1.5rem;
     }
 }
+
 

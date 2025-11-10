@@ -16,31 +16,55 @@
 
         <form id="coverLetterForm">
             <div class="form-section">
-                <label for="companyDescription">
-                    Company Description
-                    <span class="help-text">Provide details about the company you're applying to</span>
+                <label>
+                    Job Information
+                    <span class="help-text">Enter a job link or manually input company and role details</span>
                 </label>
-                <textarea 
-                    id="companyDescription" 
-                    name="companyDescription" 
-                    rows="6" 
-                    placeholder="Enter company description, culture, values, mission, etc."
-                    required
-                ></textarea>
-            </div>
+                
+                <div class="input-mode-toggle">
+                    <button type="button" class="toggle-btn active" data-mode="link" data-target="job">Link</button>
+                    <button type="button" class="toggle-btn" data-mode="text" data-target="job">Text</button>
+                </div>
 
-            <div class="form-section">
-                <label for="roleDescription">
-                    Role Description
-                    <span class="help-text">Paste the job posting or role requirements</span>
-                </label>
-                <textarea 
-                    id="roleDescription" 
-                    name="roleDescription" 
-                    rows="8" 
-                    placeholder="Enter the full job description, requirements, responsibilities, etc."
-                    required
-                ></textarea>
+                <div id="jobLinkInputSection" class="input-section active">
+                    <input 
+                        type="url" 
+                        id="jobLink" 
+                        name="jobLink" 
+                        placeholder="https://example.com/careers/job-posting"
+                        maxlength="{{ max_text_length }}"
+                    >
+                </div>
+
+                <div id="jobTextInputSection" class="input-section">
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="companyDescription" style="margin-bottom: 0.5rem;">
+                            Company Description
+                            <span class="help-text">Provide details about the company you're applying to</span>
+                        </label>
+                        <textarea 
+                            id="companyDescription" 
+                            name="companyDescription" 
+                            rows="6" 
+                            placeholder="Enter company description, culture, values, mission, etc."
+                            maxlength="{{ max_text_length }}"
+                        ></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="roleDescription" style="margin-bottom: 0.5rem;">
+                            Role Description
+                            <span class="help-text">Paste the job posting or role requirements</span>
+                        </label>
+                        <textarea 
+                            id="roleDescription" 
+                            name="roleDescription" 
+                            rows="8" 
+                            placeholder="Enter the full job description, requirements, responsibilities, etc."
+                            maxlength="{{ max_text_length }}"
+                        ></textarea>
+                    </div>
+                </div>
             </div>
 
             <div class="form-section">
@@ -50,8 +74,8 @@
                 </label>
                 
                 <div class="input-mode-toggle">
-                    <button type="button" class="toggle-btn active" data-mode="file" data-target="resume">File Upload</button>
-                    <button type="button" class="toggle-btn" data-mode="text" data-target="resume">Text Input</button>
+                    <button type="button" class="toggle-btn active" data-mode="file" data-target="resume">File</button>
+                    <button type="button" class="toggle-btn" data-mode="text" data-target="resume">Text</button>
                 </div>
 
                 <div id="resumeTextInputSection" class="input-section">
@@ -60,6 +84,7 @@
                         name="resumeText" 
                         rows="8" 
                         placeholder="Enter your resume text, including your experience, skills, and achievements..."
+                        maxlength="{{ max_text_length }}"
                     ></textarea>
                 </div>
 
@@ -93,8 +118,8 @@
                 </label>
                 
                 <div class="input-mode-toggle">
-                    <button type="button" class="toggle-btn active" data-mode="file" data-target="coverLetter">File Upload</button>
-                    <button type="button" class="toggle-btn" data-mode="text" data-target="coverLetter">Text Input</button>
+                    <button type="button" class="toggle-btn active" data-mode="file" data-target="coverLetter">File</button>
+                    <button type="button" class="toggle-btn" data-mode="text" data-target="coverLetter">Text</button>
                 </div>
 
                 <div id="textInputSection" class="input-section">
@@ -103,6 +128,7 @@
                         name="coverLetterText" 
                         rows="12" 
                         placeholder="Paste your cover letter here..."
+                        maxlength="{{ max_text_length }}"
                     ></textarea>
                 </div>
 
@@ -143,6 +169,10 @@
         </div>
     </div>
 
+    <script>
+        // Pass config values from backend to frontend
+        window.MAX_TEXT_LENGTH = {{ max_text_length }};
+    </script>
     <script src="/static/script.js"></script>
 </body>
 </html>
