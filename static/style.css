@@ -270,10 +270,49 @@ input[type="url"]::placeholder {
     display: none;
 }
 
+.result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    gap: 1rem;
+}
+
 .result-section h2 {
     font-size: 1.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
     color: var(--text-primary);
+}
+
+.copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+}
+
+.copy-btn:hover {
+    background: var(--primary-hover);
+    box-shadow: var(--shadow-md);
+}
+
+.copy-btn:active {
+    transform: translateY(1px);
+}
+
+.copy-icon {
+    width: 1rem;
+    height: 1rem;
 }
 
 #resultContent {
@@ -286,6 +325,51 @@ input[type="url"]::placeholder {
     background: var(--background);
     border-radius: 0.5rem;
     border: 1px solid var(--border-color);
+    max-height: 500px;
+    overflow-y: auto;
+    cursor: text;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#resultContent:hover {
+    border-color: var(--primary-color);
+}
+
+#resultContent:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--text-primary);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-lg);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(1rem);
+    transition: all 0.3s ease-in-out;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.success {
+    background: var(--success);
+}
+
+.toast.error {
+    background: #ef4444;
 }
 
 @media (max-width: 768px) {
@@ -303,6 +387,22 @@ input[type="url"]::placeholder {
 
     .file-upload-area {
         padding: 1.5rem;
+    }
+
+    .result-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .copy-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .toast {
+        bottom: 1rem;
+        right: 1rem;
+        left: 1rem;
     }
 }
 

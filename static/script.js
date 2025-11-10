@@ -664,3 +664,70 @@ form.addEventListener('submit', async (e) => {
         submitBtn.disabled = false;
     }
 });
+
+// Toast notification function
+function showToast(message, type = 'success') {
+    // Remove any existing toast
+    const existingToast = document.querySelector('.toast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    // Create new toast
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // Show toast with animation
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    // Hide and remove toast after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 3000);
+}
+
+// Copy to clipboard function
+async function copyToClipboard() {
+    const resultContent = document.getElementById('resultContent');
+    const text = resultContent.innerText;
+    
+    if (!text || text.trim() === '') {
+        showToast('No content to copy', 'error');
+        return;
+    }
+    
+    try {
+        await navigator.clipboard.writeText(text);
+        showToast('Cover letter copied to clipboard!', 'success');
+    } catch (error) {
+        console.error('Failed to copy:', error);
+        // Fallback for older browsers
+        try {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast('Cover letter copied to clipboard!', 'success');
+        } catch (fallbackError) {
+            console.error('Fallback copy failed:', fallbackError);
+            showToast('Failed to copy to clipboard', 'error');
+        }
+    }
+}
+
+// Add event listener for copy button
+const copyButton = document.getElementById('copyButton');
+if (copyButton) {
+    copyButton.addEventListener('click', copyToClipboard);
+}
