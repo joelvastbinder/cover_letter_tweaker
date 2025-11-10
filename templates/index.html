@@ -11,6 +11,7 @@
         <header>
             <h1>Cover Letter Tweaker</h1>
             <p class="subtitle">Customize your cover letter for different job postings</p>
+            <button type="button" id="clearSavedData" class="clear-data-btn">Clear Saved Data</button>
         </header>
 
         <form id="coverLetterForm">
@@ -43,17 +44,46 @@
             </div>
 
             <div class="form-section">
-                <label for="resumeText">
+                <label>
                     Your Resume
-                    <span class="help-text">Paste your resume text to match with the job requirements</span>
+                    <span class="help-text">Upload a file or paste your resume text</span>
                 </label>
-                <textarea 
-                    id="resumeText" 
-                    name="resumeText" 
-                    rows="8" 
-                    placeholder="Enter your resume text, including your experience, skills, and achievements..."
-                    required
-                ></textarea>
+                
+                <div class="input-mode-toggle">
+                    <button type="button" class="toggle-btn active" data-mode="file" data-target="resume">File Upload</button>
+                    <button type="button" class="toggle-btn" data-mode="text" data-target="resume">Text Input</button>
+                </div>
+
+                <div id="resumeTextInputSection" class="input-section">
+                    <textarea 
+                        id="resumeText" 
+                        name="resumeText" 
+                        rows="8" 
+                        placeholder="Enter your resume text, including your experience, skills, and achievements..."
+                    ></textarea>
+                </div>
+
+                <div id="resumeFileInputSection" class="input-section active">
+                    <div class="file-upload-area" id="resumeFileUploadArea">
+                        <input 
+                            type="file" 
+                            id="resumeFile" 
+                            name="resumeFile" 
+                            accept=".txt,.pdf,.docx"
+                            hidden
+                        >
+                        <label for="resumeFile" class="file-upload-label">
+                            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <span class="upload-text">Click to upload or drag and drop</span>
+                            <span class="upload-subtext">Supports .txt, .pdf, .docx files</span>
+                        </label>
+                        <div id="resumeFileName" class="file-name"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="form-section">
@@ -63,11 +93,11 @@
                 </label>
                 
                 <div class="input-mode-toggle">
-                    <button type="button" class="toggle-btn active" data-mode="text">Text Input</button>
-                    <button type="button" class="toggle-btn" data-mode="file">File Upload</button>
+                    <button type="button" class="toggle-btn active" data-mode="file" data-target="coverLetter">File Upload</button>
+                    <button type="button" class="toggle-btn" data-mode="text" data-target="coverLetter">Text Input</button>
                 </div>
 
-                <div id="textInputSection" class="input-section active">
+                <div id="textInputSection" class="input-section">
                     <textarea 
                         id="coverLetterText" 
                         name="coverLetterText" 
@@ -76,7 +106,7 @@
                     ></textarea>
                 </div>
 
-                <div id="fileInputSection" class="input-section">
+                <div id="fileInputSection" class="input-section active">
                     <div class="file-upload-area">
                         <input 
                             type="file" 

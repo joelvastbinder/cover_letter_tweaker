@@ -35,6 +35,7 @@ body {
 header {
     text-align: center;
     margin-bottom: 3rem;
+    position: relative;
 }
 
 h1 {
@@ -47,6 +48,31 @@ h1 {
 .subtitle {
     font-size: 1.125rem;
     color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.clear-data-btn {
+    padding: 0.5rem 1rem;
+    background: var(--background);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 1rem;
+}
+
+.clear-data-btn:hover {
+    background: var(--surface);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+    box-shadow: var(--shadow-sm);
+}
+
+.clear-data-btn:active {
+    transform: translateY(1px);
 }
 
 #coverLetterForm {
@@ -245,8 +271,15 @@ textarea::placeholder {
 }
 
 #resultContent {
-    color: var(--text-secondary);
-    line-height: 1.8;
+    color: var(--text-primary);
+    line-height: 2.0;
+    white-space: pre-wrap;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 1rem;
+    padding: 1.5rem;
+    background: var(--background);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
 }
 
 @media (max-width: 768px) {
