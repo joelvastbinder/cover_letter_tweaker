@@ -2,8 +2,26 @@ import trafilatura
 from google import genai
 from google.genai import types
 from google.api_core import exceptions as google_exceptions
+from google.api_core import retry
+from google.api_core.exceptions import GoogleAPIError, DeadlineExceeded
 
 from config import Config
+
+
+# Configure retry decorator with exponential backoff
+# Retries up to 3 times with exponential backoff (1s, 2s, 4s, up to 32s max)
+retry_decorator = retry.Retry(
+    initial=1.0,        # Initial delay of 1 second
+    maximum=32.0,       # Maximum delay of 32 seconds
+    multiplier=2.0,     # Double the delay each retry (exponential backoff)
+    deadline=300.0,     # Overall timeout of 5 minutes
+    predicate=retry.if_exception_type(
+        google_exceptions.ResourceExhausted,    # Rate limit (429)
+        google_exceptions.ServiceUnavailable,   # Service unavailable (503)
+        DeadlineExceeded,                       # Timeout errors
+        GoogleAPIError,                         # General API/network errors
+    ),
+)
 
 
 class GeminiHelper:
@@ -16,6 +34,7 @@ class GeminiHelper:
 
         self.client = genai.Client(api_key=api_key)
 
+    @retry_decorator
     def fetch_job_details(self, job_url):
         """
         Step 1: Fetches job posting content from URL and extracts relevant details using trafilatura and Gemini.
@@ -94,6 +113,7 @@ class GeminiHelper:
             print(f"ERROR in Step 1 (Fetching Job Details): {e}")
             return None
 
+    @retry_decorator
     def rewrite_cover_letter(
         self,
         job_details,
